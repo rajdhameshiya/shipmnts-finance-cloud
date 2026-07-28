@@ -125,7 +125,7 @@ async function extractWithOpenAI({ text, file }) {
               {
                 type: 'input_file',
                 filename: file.originalname,
-                file_data: `data:application/pdf;base64,${base64}`,
+                file_data: base64,
               },
             ],
           },
@@ -135,6 +135,9 @@ async function extractWithOpenAI({ text, file }) {
       return parseResponse(response);
     }
   } catch (error) {
+    if (!text.trim()) {
+      throw new Error(`OpenAI could not extract this invoice: ${error.message}`);
+    }
     console.warn('OpenAI extraction failed, using fallback parser:', error.message);
   }
 
