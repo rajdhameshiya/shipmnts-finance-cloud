@@ -67,8 +67,21 @@ export function InboxPage() {
               method: 'POST',
               body: formData,
             });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'Unable to process uploaded bill');
+            const responseText = await response.text();
+            let result: { bill?: Parameters<typeof completeUploadedBill>[1]; exception?: Parameters<typeof completeUploadedBill>[2]; error?: string };
+
+            try {
+              result = JSON.parse(responseText);
+            } catch {
+              throw new Error(
+                response.ok
+                  ? 'The server returned an unreadable response. Please try the upload again.'
+                  : responseText.trim() || `Upload failed with server status ${response.status}.`,
+              );
+            }
+
+            if (!response.ok) throw new Error(result.error || `Unable to process uploaded bill (${response.status})`);
+            if (!result.bill) throw new Error('The server completed processing without returning the bill.');
             completeUploadedBill(temporaryBillId, result.bill, result.exception);
             navigate(`/inbox/${result.bill.id}`);
           } catch (error) {

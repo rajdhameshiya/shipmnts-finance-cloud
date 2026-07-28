@@ -58,7 +58,11 @@ export async function extractText(file) {
 
 async function extractWithOpenAI({ text, file }) {
   if (!process.env.OPENAI_API_KEY) return null;
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    timeout: 40_000,
+    maxRetries: 1,
+  });
   const schemaInstruction =
     'Extract freight forwarding vendor invoice data. Return only JSON with vendorName, invoiceNumber, invoiceDate, dueDate, gstin, blNumber, containerNumber, totalAmount, taxableAmount, gstAmount, chargeLines, and confidence. chargeLines must include description, code, and amount.';
 
