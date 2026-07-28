@@ -12,6 +12,7 @@ export function InboxList({
   onFilterChange,
   onSelect,
   onSimulateIntake,
+  hideOnCompact,
 }: {
   bills: Bill[];
   allCount: number;
@@ -21,9 +22,10 @@ export function InboxList({
   onFilterChange: (filter: InboxFilter) => void;
   onSelect: (billId: string) => void;
   onSimulateIntake: (file: File) => void;
+  hideOnCompact?: boolean;
 }) {
   return (
-    <section className="flex h-full w-[360px] shrink-0 flex-col border-r border-borderSoft bg-white">
+    <section className={`${hideOnCompact ? 'hidden lg:flex' : 'flex'} h-full w-full shrink-0 flex-col border-r border-borderSoft bg-white sm:w-[360px]`}>
       <div className="border-b border-borderSoft px-4 py-3">
         <div className="mb-2 flex items-center justify-between">
           <h1 className="text-[20px] font-semibold">AP Inbox</h1>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, BarChart3, ChevronDown, FileCheck2, Inbox, PanelLeftClose, ShipWheel, UserRound } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/appStore';
@@ -22,7 +22,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
   const { role, setRole } = useAppStore();
   const [hovered, setHovered] = useState(false);
-  const compact = collapsed && !hovered;
+  const [narrowViewport, setNarrowViewport] = useState(false);
+  const compact = narrowViewport || (collapsed && !hovered);
   const userName = 'Suresh Menon';
   const initials = userName
     .split(' ')
@@ -35,10 +36,21 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       isActive ? 'bg-orange text-white' : 'text-slate-200 hover:bg-white/10',
     );
 
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => {
+      setNarrowViewport(media.matches);
+      if (media.matches) setHovered(false);
+    };
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
   return (
     <aside
       className={cn('flex h-full shrink-0 flex-col bg-navy text-white transition-[width] duration-200', compact ? 'w-[68px]' : 'w-[200px]')}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => setHovered(window.matchMedia('(hover: hover)').matches)}
       onMouseLeave={() => setHovered(false)}
     >
       <div className={cn('border-b border-white/10 py-4', compact ? 'px-3' : 'px-4')}>
@@ -47,7 +59,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <ShipWheel size={24} className="shrink-0" />
             {!compact && <span className="truncate">Shipmnts</span>}
           </div>
-          {!compact && !collapsed && (
+          {!compact && !collapsed && !narrowViewport && (
             <button
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white"
               onClick={onToggle}

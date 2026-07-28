@@ -88,11 +88,12 @@ export function InboxPage() {
             failUploadedBill(temporaryBillId, error instanceof Error ? error.message : 'Unable to process uploaded bill');
           }
         }}
+        hideOnCompact={Boolean(selected)}
       />
       {selected ? (
         <BillDetail bill={selected} exceptions={billExceptions} />
       ) : (
-        <section className="flex min-w-0 flex-1 items-center justify-center bg-appBg p-6">
+        <section className="hidden min-w-0 flex-1 items-center justify-center bg-appBg p-6 lg:flex">
           <div className="max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-orange/10 text-orange">
               <UploadCloud size={20} />

@@ -1,4 +1,6 @@
 import { format } from 'date-fns';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Bill, Exception } from '../../types';
 import { money } from '../../lib/format';
 import { useAppStore } from '../../store/appStore';
@@ -13,6 +15,7 @@ import { GSTPanel } from './GSTPanel';
 import { JobMatchCard } from './JobMatchCard';
 
 export function BillDetail({ bill, exceptions }: { bill: Bill; exceptions: Exception[] }) {
+  const navigate = useNavigate();
   const updateExtractedField = useAppStore((state) => state.updateExtractedField);
   const flaggedLines = bill.chargeLineItems.filter((line) => ['overbilled', 'underbilled', 'no_accrual', 'not_billed'].includes(line.matchStatus)).length;
   const openExceptions = exceptions.filter((exception) => exception.status !== 'resolved').length;
@@ -20,6 +23,12 @@ export function BillDetail({ bill, exceptions }: { bill: Bill; exceptions: Excep
   return (
     <section className="min-w-0 flex-1 overflow-y-auto bg-appBg">
       <div className="mx-auto max-w-6xl space-y-3 p-4">
+        <button
+          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:text-orange lg:hidden"
+          onClick={() => navigate('/inbox')}
+        >
+          <ArrowLeft size={15} /> Back to inbox
+        </button>
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
