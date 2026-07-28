@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import { KNOWN_CHARGES, REFERENCE_JOBS } from './referenceData.js';
 
 const require = createRequire(import.meta.url);
@@ -114,25 +114,31 @@ async function extractWithOpenAI({ text, file }) {
     }
 
     if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
-      const base64 = file.buffer.toString('base64');
-      const response = await openai.responses.create({
-        model,
-        input: [
-          {
-            role: 'user',
-            content: [
-              { type: 'input_text', text: schemaInstruction },
-              {
-                type: 'input_file',
-                filename: file.originalname,
-                file_data: base64,
-              },
-            ],
-          },
-        ],
-        text: { format: { type: 'json_object' } },
+      const uploadedFile = await openai.files.create({
+        file: await toFile(file.buffer, file.originalname, { type: file.mimetype }),
+        purpose: 'user_data',
       });
-      return parseResponse(response);
+
+      try {
+        const response = await openai.responses.create({
+          model,
+          input: [
+            {
+              role: 'user',
+              content: [
+                { type: 'input_text', text: schemaInstruction },
+                { type: 'input_file', file_id: uploadedFile.id },
+              ],
+            },
+          ],
+          text: { format: { type: 'json_object' } },
+        });
+        return parseResponse(response);
+      } finally {
+        await openai.files.delete(uploadedFile.id).catch((error) => {
+          console.warn('Temporary OpenAI invoice file cleanup failed:', error.message);
+        });
+      }
     }
   } catch (error) {
     if (!text.trim()) {
