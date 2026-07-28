@@ -7,7 +7,6 @@ import { useAppStore } from '../../store/appStore';
 import { AgentProgressLine } from './AgentSteps';
 import { ApprovalPanel } from './ApprovalPanel';
 import { BillSummary } from './BillSummary';
-import { BillVerification } from './BillVerification';
 import { DetailSection } from './DetailSection';
 import { DiscrepancyTable } from './DiscrepancyTable';
 import { ExtractionFields } from './ExtractionFields';
@@ -54,7 +53,6 @@ export function BillDetail({ bill, exceptions }: { bill: Bill; exceptions: Excep
         </div>
 
         <BillSummary bill={bill} />
-        <BillVerification bill={bill} />
         <ApprovalPanel bill={bill} exceptions={exceptions} />
         <DiscrepancyTable bill={bill} />
 
@@ -66,11 +64,9 @@ export function BillDetail({ bill, exceptions }: { bill: Bill; exceptions: Excep
           </DetailSection>
         )}
 
-        {!bill.sourceUrl && (
-          <DetailSection title="Extracted fields" summary={bill.extractedFields.length ? `${bill.extractedFields.length} fields captured with confidence` : 'Extraction pending'}>
-            <ExtractionFields fields={bill.extractedFields} compact onFieldChange={(fieldName, value) => updateExtractedField(bill.id, fieldName, value)} />
-          </DetailSection>
-        )}
+        <DetailSection title="Extracted fields" summary={bill.extractedFields.length ? `${bill.extractedFields.length} fields captured with confidence` : 'Extraction pending'}>
+          <ExtractionFields fields={bill.extractedFields} compact onFieldChange={(fieldName, value) => updateExtractedField(bill.id, fieldName, value)} />
+        </DetailSection>
 
         <DetailSection title="GST / TDS details" summary={bill.gstDetails ? 'Tax details captured' : 'No tax details captured'}>
           <div className="p-4">
