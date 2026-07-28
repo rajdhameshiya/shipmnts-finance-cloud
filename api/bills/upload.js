@@ -1,6 +1,4 @@
 import multer from 'multer';
-import { put } from '@vercel/blob';
-import { processUploadedBill } from '../../server/processor.js';
 
 // Server uploads must fit within Vercel's function request-body limit.
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
@@ -42,6 +40,13 @@ export default async function handler(request, response) {
     if (!request.file) {
       return response.status(400).json({ error: 'Choose a PDF or image invoice to process.' });
     }
+
+    // Load the heavier server-only modules after invocation so dependency and
+    // runtime errors are returned to the UI instead of crashing function startup.
+    const [{ put }, { processUploadedBill }] = await Promise.all([
+      import('@vercel/blob'),
+      import('../../server/processor.js'),
+    ]);
 
     const [result, blob] = await Promise.all([
       processUploadedBill(request.file),
