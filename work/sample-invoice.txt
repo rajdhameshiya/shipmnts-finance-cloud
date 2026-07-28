@@ -1,0 +1,13 @@
+Ocean Network Express India Pvt Ltd
+Invoice No: ONEU-REAL-9001
+Invoice Date: 29/07/2026
+Due Date: 05/08/2026
+GSTIN: 27AAACO1234B1ZS
+BL Number: ONEU778899
+Container Number: ONEU4455667
+
+Ocean Freight INR 54000
+Documentation Fee INR 3000
+Peak Season Surcharge INR 16500
+
+Invoice Total INR 73500

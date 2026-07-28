@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+work/.npm-cache/
+server/uploads/
+.DS_Store
