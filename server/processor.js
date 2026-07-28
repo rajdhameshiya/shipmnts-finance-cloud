@@ -3,7 +3,6 @@ import OpenAI from 'openai';
 import { KNOWN_CHARGES, REFERENCE_JOBS } from './referenceData.js';
 
 const require = createRequire(import.meta.url);
-const { PDFParse } = require('pdf-parse');
 
 const currency = 'INR';
 
@@ -42,12 +41,17 @@ const exactChargeLines = (items) =>
 
 export async function extractText(file) {
   if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
-    const parser = new PDFParse({ data: file.buffer });
+    let parser;
     try {
+      const { PDFParse } = require('pdf-parse');
+      parser = new PDFParse({ data: file.buffer });
       const parsed = await parser.getText();
       return parsed.text || '';
+    } catch (error) {
+      console.warn('Local PDF text extraction unavailable, using OpenAI file extraction:', error.message);
+      return '';
     } finally {
-      await parser.destroy();
+      await parser?.destroy();
     }
   }
   if (file.mimetype.startsWith('text/') || /\.(txt|csv)$/i.test(file.originalname)) {
