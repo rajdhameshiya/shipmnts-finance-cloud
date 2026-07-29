@@ -558,7 +558,7 @@ export const useAppStore = create<AppState>()(
       },
       migrate: (persisted, version) => {
         const saved = persisted as Partial<AppState>;
-        if (version < 2) {
+        if (version < 3) {
           return {
             ...saved,
             bills: [],
@@ -568,7 +568,7 @@ export const useAppStore = create<AppState>()(
         }
         return saved;
       },
-      version: 2,
+      version: 3,
     },
   ),
 );
