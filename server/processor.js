@@ -30,7 +30,55 @@ const firstMatch = (text, patterns) => {
   return null;
 };
 
-const normalizeContainer = (value) => value?.replace(/\s+/g, '').toUpperCase();
+const scalarText = (value) => {
+  if (value == null) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = scalarText(item);
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+  if (typeof value === 'object') {
+    for (const key of ['value', 'number', 'containerNumber', 'blNumber', 'text', 'id']) {
+      const normalized = scalarText(value[key]);
+      if (normalized) return normalized;
+    }
+    for (const item of Object.values(value)) {
+      const normalized = scalarText(item);
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+  const normalized = String(value).trim();
+  return normalized || null;
+};
+
+const normalizeContainer = (value) => scalarText(value)?.replace(/\s+/g, '').toUpperCase();
+
+export function normalizeExtractedInvoice(extracted = {}) {
+  const chargeLines = Array.isArray(extracted.chargeLines)
+    ? extracted.chargeLines
+        .filter((line) => line && typeof line === 'object')
+        .map((line) => ({
+          ...line,
+          code: scalarText(line.code),
+          description: scalarText(line.description),
+        }))
+    : [];
+
+  return {
+    ...extracted,
+    vendorName: scalarText(extracted.vendorName),
+    invoiceNumber: scalarText(extracted.invoiceNumber),
+    invoiceDate: scalarText(extracted.invoiceDate),
+    dueDate: scalarText(extracted.dueDate),
+    gstin: scalarText(extracted.gstin),
+    blNumber: scalarText(extracted.blNumber),
+    containerNumber: normalizeContainer(extracted.containerNumber),
+    chargeLines,
+  };
+}
 
 const exactChargeLines = (items) =>
   items.map(([code, description, amount]) => ({
@@ -388,8 +436,8 @@ function linesVendorGuess(text) {
 }
 
 function findJob(extracted) {
-  const bl = extracted.blNumber?.toUpperCase();
-  const container = extracted.containerNumber?.toUpperCase();
+  const bl = scalarText(extracted.blNumber)?.toUpperCase();
+  const container = normalizeContainer(extracted.containerNumber);
   return REFERENCE_JOBS.find((job) => job.blNumber === bl || job.containers.includes(container));
 }
 
@@ -479,10 +527,10 @@ function buildExtractedFields(extracted, fileName) {
 export async function processUploadedBill(file) {
   const text = await extractText(file);
   const aiExtracted = await extractWithOpenAI({ text, file });
-  const extracted = {
+  const extracted = normalizeExtractedInvoice({
     ...fallbackExtract(text, file.originalname),
     ...(aiExtracted || {}),
-  };
+  });
   const normalizedExtracted = carrierProfileExtract(text, extracted);
 
   const now = new Date();
