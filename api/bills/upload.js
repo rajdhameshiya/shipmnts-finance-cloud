@@ -3,7 +3,7 @@ import { processUploadedBill } from '../../server/processor.js';
 
 // Server uploads must fit within Vercel's function request-body limit.
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
-const PROCESSOR_REVISION = '2026-07-29-upload-timeout-v3';
+const PROCESSOR_REVISION = '2026-07-29-invoice-key-v4';
 const acceptedTypes = new Set([
   'application/pdf',
   'image/png',

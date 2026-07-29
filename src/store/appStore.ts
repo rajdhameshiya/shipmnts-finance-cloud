@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Bill, Exception, Role } from '../types';
+import { normalizeInvoiceKey } from '../lib/invoice';
 
 export interface UploadedBillFile {
   name: string;
@@ -461,7 +462,8 @@ export const useAppStore = create<AppState>()(
               existingBill.id !== bill.id &&
               existingBill.status !== 'processing' &&
               existingBill.status !== 'duplicate_blocked' &&
-              existingBill.invoiceNumber.toUpperCase() === bill.invoiceNumber.toUpperCase(),
+              Boolean(normalizeInvoiceKey(bill.invoiceNumber)) &&
+              normalizeInvoiceKey(existingBill.invoiceNumber) === normalizeInvoiceKey(bill.invoiceNumber),
           );
           const duplicateDetected = Boolean(originalBill) || bill.status === 'duplicate_blocked';
           const duplicateExceptionId = exception?.id ?? `exc-duplicate-${Date.now()}`;

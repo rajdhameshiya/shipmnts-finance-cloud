@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/appStore';
 import type { Bill, Exception } from '../../types';
 import { Modal } from '../common/Modal';
 import { money } from '../../lib/format';
+import { normalizeInvoiceKey } from '../../lib/invoice';
 
 export function ApprovalPanel({ bill, exceptions }: { bill: Bill; exceptions: Exception[] }) {
   const [confirming, setConfirming] = useState(false);
@@ -16,7 +17,8 @@ export function ApprovalPanel({ bill, exceptions }: { bill: Bill; exceptions: Ex
       (candidate) =>
         candidate.id !== bill.id &&
         candidate.status !== 'duplicate_blocked' &&
-        candidate.invoiceNumber.toUpperCase() === bill.invoiceNumber.toUpperCase(),
+        Boolean(normalizeInvoiceKey(bill.invoiceNumber)) &&
+        normalizeInvoiceKey(candidate.invoiceNumber) === normalizeInvoiceKey(bill.invoiceNumber),
     ),
   );
   const openExceptions = exceptions.filter((exception) => exception.status !== 'resolved');

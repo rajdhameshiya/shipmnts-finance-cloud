@@ -54,6 +54,9 @@ const scalarText = (value) => {
   return normalized || null;
 };
 
+export const normalizeInvoiceKey = (value) =>
+  scalarText(value)?.toUpperCase().replace(/[^A-Z0-9]/g, '') || '';
+
 const normalizeContainer = (value) => scalarText(value)?.replace(/\s+/g, '').toUpperCase();
 
 export function normalizeExtractedInvoice(extracted = {}) {
@@ -285,11 +288,11 @@ function fallbackExtract(text, fileName) {
 }
 
 export function carrierProfileExtract(text, extracted) {
-  const profileContext = `${text}\n${extracted.vendorName || ''}\n${extracted.invoiceNumber || ''}`;
+  const profileContext = `${text}\n${extracted.vendorName || ''}\n${extracted.invoiceNumber || ''}\n${normalizeInvoiceKey(extracted.invoiceNumber)}`;
 
-  if (/Unifeeder Agencies India Private Limited|27INSA\d+\/UAI/i.test(profileContext)) {
+  if (/Unifeeder Agencies India Private Limited|27INSA\d+(?:\/)?UAI/i.test(profileContext)) {
     const invoiceNumber = firstMatch(text, [/\b(27INSA\d{10}\/UAI)\b/i]) || scalarText(extracted.invoiceNumber);
-    const isFreightInvoice = invoiceNumber === '27INSA2606031447/UAI';
+    const isFreightInvoice = normalizeInvoiceKey(invoiceNumber) === normalizeInvoiceKey('27INSA2606031447/UAI');
     return {
       ...extracted,
       vendorName: 'Unifeeder Agencies India Private Limited',
@@ -326,7 +329,7 @@ export function carrierProfileExtract(text, extracted) {
 
   if (/COSCO SHIPPING LINES \(INDIA\) PRIVATE LIMITED|CIEX\d+/i.test(profileContext)) {
     const invoiceNumber = firstMatch(text, [/\b(CIEX\d{12})\b/i]) || scalarText(extracted.invoiceNumber);
-    const isFreightInvoice = invoiceNumber === 'CIEX272606000454';
+    const isFreightInvoice = normalizeInvoiceKey(invoiceNumber) === normalizeInvoiceKey('CIEX272606000454');
     return {
       ...extracted,
       vendorName: 'COSCO Shipping Lines (India) Private Limited',
@@ -394,7 +397,7 @@ export function carrierProfileExtract(text, extracted) {
 
   if (/CMA CGM|INEMHC\d+/i.test(profileContext)) {
     const invoiceNumber = firstMatch(text, [/\b(INEMHC\d{8})\b/i]) || scalarText(extracted.invoiceNumber);
-    const isMultiContainer = invoiceNumber === 'INEMHC27047899';
+    const isMultiContainer = normalizeInvoiceKey(invoiceNumber) === normalizeInvoiceKey('INEMHC27047899');
     return {
       ...extracted,
       vendorName: 'CMA CGM SA',
@@ -443,8 +446,13 @@ function findJob(extracted) {
   return REFERENCE_JOBS.find((job) => job.blNumber === bl || job.containers.includes(container));
 }
 
-function accrualsForInvoice(job, invoiceNumber) {
-  return job?.invoiceAccruals?.[invoiceNumber] || job?.accruals || [];
+export function accrualsForInvoice(job, invoiceNumber) {
+  const invoiceKey = normalizeInvoiceKey(invoiceNumber);
+  const matchedAccruals = Object.entries(job?.invoiceAccruals || {}).find(
+    ([referenceInvoice]) => normalizeInvoiceKey(referenceInvoice) === invoiceKey,
+  )?.[1];
+
+  return matchedAccruals || job?.accruals || [];
 }
 
 function mapCharges(extracted, job) {
@@ -539,7 +547,8 @@ export async function processUploadedBill(file) {
   const billId = `bill-upload-${Date.now()}`;
   const exceptionId = `exc-upload-${Date.now()}`;
   const duplicateAlreadyProcessed =
-    normalizedExtracted.invoiceNumber && processedInvoiceNumbers.has(String(normalizedExtracted.invoiceNumber).toUpperCase());
+    normalizeInvoiceKey(normalizedExtracted.invoiceNumber) &&
+    processedInvoiceNumbers.has(normalizeInvoiceKey(normalizedExtracted.invoiceNumber));
   const duplicateCopy = Boolean(normalizedExtracted.duplicateCopy);
   const job = findJob(normalizedExtracted);
   const chargeLineItems = mapCharges(normalizedExtracted, job);
@@ -649,7 +658,7 @@ export async function processUploadedBill(file) {
   };
 
   if (invoiceNumber && !duplicateAlreadyProcessed && !duplicateCopy) {
-    processedInvoiceNumbers.add(String(invoiceNumber).toUpperCase());
+    processedInvoiceNumbers.add(normalizeInvoiceKey(invoiceNumber));
   }
 
   return {
