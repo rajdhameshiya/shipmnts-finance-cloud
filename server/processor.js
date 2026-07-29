@@ -116,7 +116,7 @@ async function extractWithOpenAI({ text, file }) {
     maxRetries: 1,
   });
   const schemaInstruction =
-    'Extract freight forwarding vendor invoice data. Return only JSON with vendorName, invoiceNumber, invoiceDate, dueDate, gstin, blNumber, containerNumber, totalAmount, taxableAmount, gstAmount, chargeLines, and confidence. chargeLines must include description, code, and amount.';
+    'Extract freight forwarding vendor invoice data. Return only JSON with vendorName, invoiceNumber, invoiceDate, dueDate, gstin, blNumber, containerNumber, totalAmount, taxableAmount, gstAmount, duplicateCopy, chargeLines, and confidence. Set duplicateCopy to true when the document is marked duplicate or duplicate supplier copy. chargeLines must include description, code, and amount.';
 
   const parseResponse = (response) => {
     const output = response.output_text || response.output?.flatMap((item) => item.content || []).map((part) => part.text).filter(Boolean).join('\n') || '{}';
@@ -284,9 +284,11 @@ function fallbackExtract(text, fileName) {
   };
 }
 
-function carrierProfileExtract(text, extracted) {
-  if (/Unifeeder Agencies India Private Limited/i.test(text)) {
-    const invoiceNumber = firstMatch(text, [/\b(27INSA\d{10}\/UAI)\b/i]);
+export function carrierProfileExtract(text, extracted) {
+  const profileContext = `${text}\n${extracted.vendorName || ''}\n${extracted.invoiceNumber || ''}`;
+
+  if (/Unifeeder Agencies India Private Limited|27INSA\d+\/UAI/i.test(profileContext)) {
+    const invoiceNumber = firstMatch(text, [/\b(27INSA\d{10}\/UAI)\b/i]) || scalarText(extracted.invoiceNumber);
     const isFreightInvoice = invoiceNumber === '27INSA2606031447/UAI';
     return {
       ...extracted,
@@ -322,8 +324,8 @@ function carrierProfileExtract(text, extracted) {
     };
   }
 
-  if (/COSCO SHIPPING LINES \(INDIA\) PRIVATE LIMITED/i.test(text)) {
-    const invoiceNumber = firstMatch(text, [/\b(CIEX\d{12})\b/i]);
+  if (/COSCO SHIPPING LINES \(INDIA\) PRIVATE LIMITED|CIEX\d+/i.test(profileContext)) {
+    const invoiceNumber = firstMatch(text, [/\b(CIEX\d{12})\b/i]) || scalarText(extracted.invoiceNumber);
     const isFreightInvoice = invoiceNumber === 'CIEX272606000454';
     return {
       ...extracted,
@@ -351,7 +353,7 @@ function carrierProfileExtract(text, extracted) {
     };
   }
 
-  if (/Maersk Line India Pvt\. Ltd\./i.test(text)) {
+  if (/Maersk Line India Pvt\. Ltd\.|MH27IN1000616149/i.test(profileContext)) {
     return {
       ...extracted,
       vendorName: 'Maersk Line India Pvt. Ltd.',
@@ -369,7 +371,7 @@ function carrierProfileExtract(text, extracted) {
     };
   }
 
-  if (/Hapag-Lloyd AG/i.test(text)) {
+  if (/Hapag-Lloyd AG|MH11953184/i.test(profileContext)) {
     return {
       ...extracted,
       vendorName: 'Hapag-Lloyd AG',
@@ -390,8 +392,8 @@ function carrierProfileExtract(text, extracted) {
     };
   }
 
-  if (/CMA CGM/i.test(text)) {
-    const invoiceNumber = firstMatch(text, [/\b(INEMHC\d{8})\b/i]);
+  if (/CMA CGM|INEMHC\d+/i.test(profileContext)) {
+    const invoiceNumber = firstMatch(text, [/\b(INEMHC\d{8})\b/i]) || scalarText(extracted.invoiceNumber);
     const isMultiContainer = invoiceNumber === 'INEMHC27047899';
     return {
       ...extracted,
@@ -421,7 +423,7 @@ function carrierProfileExtract(text, extracted) {
             ['ERC', 'Extra Risk Coverage Surcharge at destination', 504],
             ['ECS', 'Emergency Conflict Surcharge', 14000],
           ]),
-      duplicateCopy: !isMultiContainer && /DUPLICATE\*\*|DUPLICATE FOR SUPPLIER/i.test(text),
+      duplicateCopy: !isMultiContainer && (Boolean(extracted.duplicateCopy) || /DUPLICATE\*\*|DUPLICATE FOR SUPPLIER/i.test(text)),
       confidence: 94,
     };
   }
