@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/bills/upload.js": {
-      "maxDuration": 60
+      "maxDuration": 120
     }
   },
   "rewrites": [

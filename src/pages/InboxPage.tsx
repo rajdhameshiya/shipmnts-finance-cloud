@@ -73,8 +73,11 @@ export function InboxPage() {
             try {
               result = JSON.parse(responseText);
             } catch {
+              const timedOut = response.status === 504 || /FUNCTION_INVOCATION_TIMEOUT|timed out/i.test(responseText);
               throw new Error(
-                response.ok
+                timedOut
+                  ? 'Invoice processing took longer than expected. Please retry the upload in a moment.'
+                  : response.ok
                   ? 'The server returned an unreadable response. Please try the upload again.'
                   : responseText.trim() || `Upload failed with server status ${response.status}.`,
               );
