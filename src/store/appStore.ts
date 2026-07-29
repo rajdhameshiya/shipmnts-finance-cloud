@@ -556,7 +556,19 @@ export const useAppStore = create<AppState>()(
           ),
         };
       },
-      version: 1,
+      migrate: (persisted, version) => {
+        const saved = persisted as Partial<AppState>;
+        if (version < 2) {
+          return {
+            ...saved,
+            bills: [],
+            exceptions: [],
+            selectedBillId: '',
+          };
+        }
+        return saved;
+      },
+      version: 2,
     },
   ),
 );
