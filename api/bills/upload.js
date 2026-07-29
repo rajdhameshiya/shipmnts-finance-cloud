@@ -2,6 +2,7 @@ import multer from 'multer';
 
 // Server uploads must fit within Vercel's function request-body limit.
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const PROCESSOR_REVISION = '2026-07-29-structured-identifiers';
 const acceptedTypes = new Set([
   'application/pdf',
   'image/png',
@@ -29,6 +30,8 @@ function safeFilename(filename = 'invoice') {
 }
 
 export default async function handler(request, response) {
+  response.setHeader('X-Shipmnts-Processor', PROCESSOR_REVISION);
+
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return response.status(405).json({ error: 'Method not allowed' });
@@ -60,7 +63,7 @@ export default async function handler(request, response) {
     result.bill.sourceUrl = `/api/files?pathname=${encodeURIComponent(blob.pathname)}`;
     result.bill.sourceMimeType = request.file.mimetype;
 
-    return response.status(200).json(result);
+    return response.status(200).json({ ...result, processorRevision: PROCESSOR_REVISION });
   } catch (error) {
     console.error('Invoice upload failed:', error);
     const status = error?.code === 'LIMIT_FILE_SIZE' ? 413 : 500;
